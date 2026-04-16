@@ -1,0 +1,25 @@
+package com.start_up_insight_engine.database.entity;
+
+import com.start_up_insight_engine.database.enums.SubscriptionType;
+import com.start_up_insight_engine.database.enums.AddOnType;
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "Add_ON")
+public class AddOn {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)  // JPA stocke valeur de l'enum (LEARNING, ..) au lieu de l'index
+    private AddOnType addOnType;
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private SubscriptionType subscriptionType;
+
+    @Column(nullable = false)
+    private Integer price;
+}
