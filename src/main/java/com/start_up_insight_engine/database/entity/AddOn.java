@@ -3,6 +3,7 @@ package com.start_up_insight_engine.database.entity;
 import com.start_up_insight_engine.database.enums.AddOnBillingType;
 import com.start_up_insight_engine.database.enums.AddOnType;
 import jakarta.persistence.*;
+import lombok.Setter;
 
 @Entity
 @Table(name = "Add_ON")
