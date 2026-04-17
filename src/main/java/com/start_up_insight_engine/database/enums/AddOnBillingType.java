@@ -1,6 +1,6 @@
 package com.start_up_insight_engine.database.enums;
 
-public enum SubscriptionType {
+public enum AddOnBillingType {
     ONE_TIME,
     RECURRING
 }

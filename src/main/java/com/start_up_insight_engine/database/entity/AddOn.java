@@ -1,6 +1,6 @@
 package com.start_up_insight_engine.database.entity;
 
-import com.start_up_insight_engine.database.enums.SubscriptionType;
+import com.start_up_insight_engine.database.enums.AddOnBillingType;
 import com.start_up_insight_engine.database.enums.AddOnType;
 import jakarta.persistence.*;
 
@@ -18,7 +18,7 @@ public class AddOn {
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private SubscriptionType subscriptionType;
+    private AddOnBillingType addOnBillingType;
 
     @Column(nullable = false)
     private Integer price;

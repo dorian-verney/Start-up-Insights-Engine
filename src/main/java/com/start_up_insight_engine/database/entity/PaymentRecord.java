@@ -2,7 +2,6 @@ package com.start_up_insight_engine.database.entity;
 
 import com.start_up_insight_engine.database.enums.AddOnType;
 import com.start_up_insight_engine.database.enums.PaymentType;
-import com.start_up_insight_engine.database.enums.SubscriptionType;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
