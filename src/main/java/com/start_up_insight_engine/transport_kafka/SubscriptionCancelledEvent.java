@@ -1,6 +1,5 @@
-package com.start_up_insight_engine.transport;
+package com.start_up_insight_engine.transport_kafka;
 
-import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 
 @Getter

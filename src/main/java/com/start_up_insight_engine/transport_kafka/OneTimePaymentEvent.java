@@ -1,12 +1,8 @@
-package com.start_up_insight_engine.transport;
+package com.start_up_insight_engine.transport_kafka;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.Month;
 
 @Getter
 public class OneTimePaymentEvent extends KafkaEventWrapper {

@@ -2,7 +2,10 @@ package com.start_up_insight_engine.consumers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.start_up_insight_engine.service.SubscriptionService;
-import com.start_up_insight_engine.transport.*;
+import com.start_up_insight_engine.transport_kafka.KafkaEventWrapper;
+import com.start_up_insight_engine.transport_kafka.PlanChangedEvent;
+import com.start_up_insight_engine.transport_kafka.SubscriptionCancelledEvent;
+import com.start_up_insight_engine.transport_kafka.SubscriptionStartedEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;

@@ -1,4 +1,4 @@
-package com.start_up_insight_engine.transport;
+package com.start_up_insight_engine.transport_kafka;
 
 import com.start_up_insight_engine.database.entity.Plan;
 import jakarta.validation.constraints.NotNull;

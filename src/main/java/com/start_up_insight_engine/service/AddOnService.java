@@ -3,11 +3,10 @@ package com.start_up_insight_engine.service;
 import com.start_up_insight_engine.database.entity.*;
 import com.start_up_insight_engine.database.enums.Trigger;
 import com.start_up_insight_engine.repository.*;
-import com.start_up_insight_engine.transport.AddOnAddedEvent;
-import com.start_up_insight_engine.transport.AddOnRemovedEvent;
+import com.start_up_insight_engine.transport_kafka.AddOnAddedEvent;
+import com.start_up_insight_engine.transport_kafka.AddOnRemovedEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;

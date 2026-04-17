@@ -1,9 +1,9 @@
 package com.start_up_insight_engine.consumers;
 
 import com.start_up_insight_engine.service.AddOnService;
-import com.start_up_insight_engine.transport.AddOnAddedEvent;
-import com.start_up_insight_engine.transport.AddOnRemovedEvent;
-import com.start_up_insight_engine.transport.KafkaEventWrapper;
+import com.start_up_insight_engine.transport_kafka.AddOnAddedEvent;
+import com.start_up_insight_engine.transport_kafka.AddOnRemovedEvent;
+import com.start_up_insight_engine.transport_kafka.KafkaEventWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;

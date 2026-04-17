@@ -25,7 +25,7 @@ public class ChurnSnapshot {
     private float rate;
 
     @Column(nullable = false)
-    private Long activeSubcribers;
+    private Long activeSubscribers;
 
     @Column(nullable = false)
     private Trigger reason;
