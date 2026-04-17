@@ -1,8 +1,6 @@
 package com.start_up_insight_engine.service;
 
-import com.start_up_insight_engine.database.entity.LtvSnapshot;
 import com.start_up_insight_engine.database.entity.RunwaySnapshot;
-import com.start_up_insight_engine.repository.LtvSnapshotRepository;
 import com.start_up_insight_engine.repository.RunwaySnapshotRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

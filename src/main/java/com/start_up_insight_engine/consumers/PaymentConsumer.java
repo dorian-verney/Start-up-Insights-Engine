@@ -1,6 +1,6 @@
 package com.start_up_insight_engine.consumers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.start_up_insight_engine.service.PaymentService;
 import com.start_up_insight_engine.transport_kafka.KafkaEventWrapper;
 import com.start_up_insight_engine.transport_kafka.OneTimePaymentEvent;

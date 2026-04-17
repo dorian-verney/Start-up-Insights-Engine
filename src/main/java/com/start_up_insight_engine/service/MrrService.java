@@ -1,12 +1,10 @@
 package com.start_up_insight_engine.service;
 
 import com.start_up_insight_engine.database.entity.MrrSnapshot;
-import com.start_up_insight_engine.dto.MrrResponse;
 import com.start_up_insight_engine.repository.MrrSnapshotRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
+
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;

@@ -1,15 +1,32 @@
+server:
+  port: 8081
+
+logging:
+  level:
+    org.hibernate.orm.jdbc.bind: trace
+
 spring:
-  application:
-    name: demo
+  sql:
+    init:
+      mode: always
+
+  kafka:
+    bootstrap-servers: localhost:19092  # adresse du broker Kafka
+    consumer:
+      group-id: startup-insight-engine # identifiant du groupe de consumers
+      auto-offset-reset: earliest       # relit depuis le début si pas d'offset
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
   datasource:
-    url: jdbc:postgresql://localhost:5432/startup_insight
+    url: jdbc:postgresql://localhost:5433/startup_insight
     username: postgres
     password: postgres
     driver-class-name: org.postgresql.Driver
+
   jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update
     show-sql: true
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+

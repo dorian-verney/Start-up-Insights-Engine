@@ -7,9 +7,11 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
+
 public interface PlanRepository extends JpaRepository<Plan, Long>  {
 
-    Plan findByPlanType(PlanType planType);
+    Optional<Plan> findByPlanType(PlanType planType);
 
     @Modifying
     @Query("UPDATE Plan p SET p.price = :newPrice WHERE p.planType = :planType")

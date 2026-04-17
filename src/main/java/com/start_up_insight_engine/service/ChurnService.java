@@ -1,9 +1,7 @@
 package com.start_up_insight_engine.service;
 
 import com.start_up_insight_engine.database.entity.ChurnSnapshot;
-import com.start_up_insight_engine.database.entity.MrrSnapshot;
 import com.start_up_insight_engine.repository.ChurnSnapshotRepository;
-import com.start_up_insight_engine.repository.MrrSnapshotRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

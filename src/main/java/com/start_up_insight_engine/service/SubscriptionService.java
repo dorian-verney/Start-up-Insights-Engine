@@ -1,9 +1,6 @@
 package com.start_up_insight_engine.service;
 
-import com.start_up_insight_engine.database.entity.ChurnSnapshot;
-import com.start_up_insight_engine.database.entity.LtvSnapshot;
-import com.start_up_insight_engine.database.entity.MrrSnapshot;
-import com.start_up_insight_engine.database.entity.Subscriber;
+import com.start_up_insight_engine.database.entity.*;
 import com.start_up_insight_engine.repository.*;
 import com.start_up_insight_engine.transport_kafka.PlanChangedEvent;
 import com.start_up_insight_engine.transport_kafka.SubscriptionCancelledEvent;
@@ -43,10 +40,13 @@ public class SubscriptionService {
     public void handleSubscriptionStarted(SubscriptionStartedEvent event) {
 
         // 1. New subscriber to persist in database
+        Plan plan = planRepository.findByPlanType(event.getPlantype())
+                .orElseThrow(() -> new IllegalArgumentException("Unknown plan type: " + event.getPlantype()));
+
         Subscriber sub = Subscriber.builder()
                 .name(event.getSubscriberName())
                 .email(event.getSubscriberEmail())
-                .plan(planRepository.findByPlanType(event.getPlantype()))
+                .plan(plan)
                 .subscribedAt(event.getEventTime())
                 .build();
         subscriberRepository.save(sub);
@@ -68,14 +68,14 @@ public class SubscriptionService {
         Long lastActiveSubscribers = 0L;
         float lastRate             = 0F;
         if (lastOneChurn.isPresent()){
-            lastActiveSubscribers = lastOneChurn.get().getActiveSubcribers();
+            lastActiveSubscribers = lastOneChurn.get().getActiveSubscribers();
             lastRate             = lastOneChurn.get().getRate();
         }
 
         ChurnSnapshot churn = ChurnSnapshot.builder()
                 .timestamp(event.getEventTime())
                 .rate(lastRate)
-                .activeSubcribers(lastActiveSubscribers+1)
+                .activeSubscribers(lastActiveSubscribers+1)
                 .reason(Trigger.SUB_STARTED)
                 .build();
         churnSnapshotRepository.save(churn);
@@ -128,7 +128,7 @@ public class SubscriptionService {
         Optional<ChurnSnapshot> lastOneChurn = churnSnapshotRepository.findTopByOrderByTimestampDesc();
         Long lastActiveSubscribers = lastOneChurn.isEmpty()
                 ? 0L
-                : lastOneChurn.get().getActiveSubcribers();
+                : lastOneChurn.get().getActiveSubscribers();
 
 
         LocalDateTime startOfMonth = event.getEventTime()
@@ -147,7 +147,7 @@ public class SubscriptionService {
         ChurnSnapshot churn = ChurnSnapshot.builder()
                 .timestamp(event.getEventTime())
                 .rate(newRate)
-                .activeSubcribers(lastActiveSubscribers-1)
+                .activeSubscribers(lastActiveSubscribers-1)
                 .reason(Trigger.SUB_CANCELLED)
                 .build();
         churnSnapshotRepository.save(churn);

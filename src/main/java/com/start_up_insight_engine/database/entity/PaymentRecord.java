@@ -3,14 +3,18 @@ package com.start_up_insight_engine.database.entity;
 import com.start_up_insight_engine.database.enums.AddOnType;
 import com.start_up_insight_engine.database.enums.PaymentType;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Builder
 @Getter
 @Entity
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "PAYMENT_RECORD")
 public class PaymentRecord {
 
