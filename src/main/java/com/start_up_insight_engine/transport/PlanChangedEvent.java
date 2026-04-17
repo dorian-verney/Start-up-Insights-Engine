@@ -1,16 +1,19 @@
 package com.start_up_insight_engine.transport;
 
+import com.start_up_insight_engine.database.entity.Plan;
 import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
 
 import java.math.BigDecimal;
 
+@Getter
 public class PlanChangedEvent extends KafkaEventWrapper {
 
     @NotNull
-    private Long oldPlanId;
+    private Plan oldPlan;
 
     @NotNull
-    private Long newPlanId;
+    private Plan newPlan;
 
     @NotNull
     private BigDecimal oldMrrAmount;

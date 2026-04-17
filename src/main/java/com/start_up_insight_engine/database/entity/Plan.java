@@ -2,7 +2,9 @@ package com.start_up_insight_engine.database.entity;
 
 import com.start_up_insight_engine.database.enums.PlanType;
 import jakarta.persistence.*;
+import lombok.Getter;
 
+@Getter
 @Entity
 @Table(name = "PLAN")
 public class Plan {
