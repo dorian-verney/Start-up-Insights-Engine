@@ -1,5 +1,5 @@
 server:
-  port: 8081
+  port: 8080
 
 logging:
   level:
@@ -11,7 +11,7 @@ spring:
       mode: always
 
   kafka:
-    bootstrap-servers: localhost:19092  # adresse du broker Kafka
+    bootstrap-servers: localhost:9092  # adresse du broker Kafka
     consumer:
       group-id: startup-insight-engine # identifiant du groupe de consumers
       auto-offset-reset: earliest       # relit depuis le début si pas d'offset
@@ -29,4 +29,5 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+    defer-datasource-initialization: true  # waiting for scheam ready before seeding database
 

@@ -23,6 +23,8 @@ public interface SubscriberRepository extends JpaRepository<Subscriber, Long> {
 
     List<Subscriber> findByCancelledAtBetween(LocalDateTime start, LocalDateTime end);
 
+    Optional<Subscriber> findTopByOrderByIdDesc();
+
 //    @Query("SELECT SUM(p.price) FROM Subscriber s JOIN PaymentRecord p ON
 //            p WHERE s.id = p.subscriberId AND s = :subscriber")
 //    BigDecimal sumBySubscriber(@Param("subscriber") Subscriber subscriber);

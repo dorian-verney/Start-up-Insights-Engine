@@ -21,10 +21,7 @@ import com.start_up_insight_engine.service.RunwayService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Month;
@@ -33,9 +30,12 @@ import java.time.YearMonth;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
-
+@CrossOrigin(origins = {
+        "http://localhost:5173"
+//        "https://ton-frontend.vercel.app"
+})
 @RestController
-@RequestMapping("/metrics")
+@RequestMapping("/api/metrics")
 public class MetricsController {
 
     @Autowired
@@ -77,7 +77,7 @@ public class MetricsController {
 
     @GetMapping("/mrr/before/{year}/{month}")
     public ResponseEntity<List<MrrResponse>> getToMonthMrr(
-            @PathVariable int year, @PathVariable Month month
+            @PathVariable int year, @PathVariable int month
     ) {
         List<MrrSnapshot> snaps = mrrService.findToMonth(YearMonth.of(year, month)
                         .atDay(1)
@@ -87,7 +87,7 @@ public class MetricsController {
 
     @GetMapping("/mrr/after/{year}/{month}")
     public ResponseEntity<List<MrrResponse>> getFromMonthMrr(
-            @PathVariable int year, @PathVariable Month month
+            @PathVariable int year, @PathVariable int month
     ) {
         List<MrrSnapshot> snaps = mrrService.findFromMonth(YearMonth.of(year, month)
                         .atDay(1)
@@ -114,7 +114,7 @@ public class MetricsController {
 
     @GetMapping("/churn/before/{year}/{month}")
     public ResponseEntity<List<ChurnResponse>> getToMonthChurn(
-            @PathVariable int year, @PathVariable Month month
+            @PathVariable int year, @PathVariable int month
     ) {
         List<ChurnSnapshot> snaps = churnService.findToMonth(YearMonth.of(year, month)
                 .atDay(1)
@@ -124,7 +124,7 @@ public class MetricsController {
 
     @GetMapping("/churn/after/{year}/{month}")
     public ResponseEntity<List<ChurnResponse>> getFromMonthChurn(
-            @PathVariable int year, @PathVariable Month month
+            @PathVariable int year, @PathVariable int month
     ) {
         List<ChurnSnapshot> snaps = churnService.findFromMonth(YearMonth.of(year, month)
                 .atDay(1)
@@ -151,7 +151,7 @@ public class MetricsController {
 
     @GetMapping("/ltv/before/{year}/{month}")
     public ResponseEntity<List<LtvResponse>> getToMonthLtv(
-            @PathVariable int year, @PathVariable Month month
+            @PathVariable int year, @PathVariable int month
     ) {
         List<LtvSnapshot> snaps = ltvService.findToMonth(YearMonth.of(year, month)
                 .atDay(1)
@@ -161,7 +161,7 @@ public class MetricsController {
 
     @GetMapping("/ltv/after/{year}/{month}")
     public ResponseEntity<List<LtvResponse>> getFromMonthLtv(
-            @PathVariable int year, @PathVariable Month month
+            @PathVariable int year, @PathVariable int month
     ) {
         List<LtvSnapshot> snaps = ltvService.findFromMonth(YearMonth.of(year, month)
                 .atDay(1)
@@ -188,7 +188,7 @@ public class MetricsController {
 
     @GetMapping("/runway/before/{year}/{month}")
     public ResponseEntity<List<RunwayResponse>> getToMonthRunway(
-            @PathVariable int year, @PathVariable Month month
+            @PathVariable int year, @PathVariable int month
     ) {
         List<RunwaySnapshot> snaps = runwayService.findToMonth(YearMonth.of(year, month)
                 .atDay(1)
@@ -198,7 +198,7 @@ public class MetricsController {
 
     @GetMapping("/runway/after/{year}/{month}")
     public ResponseEntity<List<RunwayResponse>> getFromMonthRunway(
-            @PathVariable int year, @PathVariable Month month
+            @PathVariable int year, @PathVariable int month
     ) {
         List<RunwaySnapshot> snaps = runwayService.findFromMonth(YearMonth.of(year, month)
                 .atDay(1)
