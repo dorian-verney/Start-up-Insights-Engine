@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Builder
@@ -16,7 +17,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "PAYMENT_RECORD")
-public class PaymentRecord {
+public class PaymentRecord implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

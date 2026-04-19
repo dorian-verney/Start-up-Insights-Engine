@@ -5,13 +5,14 @@ import com.start_up_insight_engine.database.enums.AddOnType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
+
+import java.io.Serializable;
 
 @Entity
 @Table(name = "Add_ON")
 @NoArgsConstructor
 @AllArgsConstructor
-public class AddOn {
+public class AddOn implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

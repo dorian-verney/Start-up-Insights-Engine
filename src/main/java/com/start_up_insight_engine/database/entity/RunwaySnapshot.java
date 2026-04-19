@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -16,7 +17,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "RUNWAY_SNAPSHOT")
-public class RunwaySnapshot {
+public class RunwaySnapshot implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -18,21 +18,20 @@ import java.util.Optional;
 @Service
 public class PaymentService {
 
-    @Autowired
-    private LtvSnapshotRepository ltvSnapshotRepository;
 
     @Autowired
-    private RunwaySnapshotRepository runwaySnapshotRepository;
+    private RunwayService runwayService;
 
     @Autowired
-    private SubscriberRepository subscriberRepository;
+    private SubscriptionService subscriptionService;
 
     @Autowired
-    private PaymentRecordRepository paymentRecordRepository;
+    private PaymentRecordService paymentRecordService;
+
 
 
     public void handlePaymentSucceeded(PaymentSucceededEvent event){
-        Optional<Subscriber> opSub = subscriberRepository.findById(event.getSubscriberId());
+        Optional<Subscriber> opSub = subscriptionService.findById(event.getSubscriberId());
         if (opSub.isEmpty()) {
             log.warn("Subscriber not found: {}", event.getSubscriberId());
             return;
@@ -46,10 +45,10 @@ public class PaymentService {
                 .price(event.getAmount())
                 .paymentType(event.getPaymentType())
                 .build();
-        paymentRecordRepository.save(payment);
+        paymentRecordService.save(payment);
 
         // 2. update runway -> cash + amount
-        Optional<RunwaySnapshot> lastRunAway = runwaySnapshotRepository.findTopByOrderByTimestampDesc();
+        Optional<RunwaySnapshot> lastRunAway = runwayService.findLastOne();
 
         BigDecimal newLiquidity = new BigDecimal(event.getAmount());
         BigDecimal totalCost = BigDecimal.ZERO;
@@ -69,7 +68,7 @@ public class PaymentService {
                 .runway(newRunway)
                 .reason(Trigger.PAYMENT_SUCCEEDED)
                 .build();
-        runwaySnapshotRepository.save(runwaySnapshot);
+        runwayService.save(runwaySnapshot);
     }
 
     public void handlePaymentFailed(PaymentFailedEvent event){
@@ -78,7 +77,7 @@ public class PaymentService {
     }
 
     public void handleOneTimePayment(OneTimePaymentEvent event){
-        Optional<Subscriber> opSub = subscriberRepository.findById(event.getSubscriberId());
+        Optional<Subscriber> opSub = subscriptionService.findById(event.getSubscriberId());
         if (opSub.isEmpty()) {
             log.warn("Subscriber not found: {}", event.getSubscriberId());
             return;
@@ -92,10 +91,10 @@ public class PaymentService {
                 .price(event.getAmount())
                 .paymentType(PaymentType.ADDON)
                 .build();
-        paymentRecordRepository.save(payment);
+        paymentRecordService.save(payment);
 
         // 2. update runway -> cash + amount
-        Optional<RunwaySnapshot> lastRunAway = runwaySnapshotRepository.findTopByOrderByTimestampDesc();
+        Optional<RunwaySnapshot> lastRunAway = runwayService.findLastOne();
 
         BigDecimal newLiquidity = new BigDecimal(event.getAmount());
         BigDecimal totalCost = BigDecimal.ZERO;
@@ -115,6 +114,6 @@ public class PaymentService {
                 .runway(newRunway)
                 .reason(Trigger.ONE_TIME_PAYMENT)
                 .build();
-        runwaySnapshotRepository.save(runwaySnapshot);
+        runwayService.save(runwaySnapshot);
     }
 }

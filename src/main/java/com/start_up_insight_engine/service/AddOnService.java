@@ -1,12 +1,15 @@
 package com.start_up_insight_engine.service;
 
 import com.start_up_insight_engine.database.entity.*;
+import com.start_up_insight_engine.database.enums.AddOnType;
 import com.start_up_insight_engine.database.enums.Trigger;
 import com.start_up_insight_engine.repository.*;
 import com.start_up_insight_engine.transport_kafka.AddOnAddedEvent;
 import com.start_up_insight_engine.transport_kafka.AddOnRemovedEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -20,24 +23,34 @@ public class AddOnService {
     @Autowired
     private AddOnRepository addOnRepository;
 
+
+    @Lazy
     @Autowired
-    private SubscriberRepository subscriberRepository;
+    private AddOnService self;
 
     @Autowired
-    private MrrSnapshotRepository mrrSnapshotRepository;
+    private SubscriptionService subscriptionService;
 
     @Autowired
-    private LtvSnapshotRepository ltvSnapshotRepository;
+    private SubscriberAddOnService subscriberAddOnService;
 
     @Autowired
-    private ChurnSnapshotRepository churnSnapshotRepository;
+    private MrrService mrrService;
 
     @Autowired
-    private SubscriberAddOnRepository subscriberAddOnRepository;
+    private LtvService ltvService;
+
+    @Autowired
+    private ChurnService churnService;
+
+    @Cacheable(value = "addon-type", key = "#addOnType.toString()")
+    public Optional<AddOn> findByAddOnType(AddOnType addOnType){
+        return addOnRepository.findByAddOnType(addOnType);
+    }
 
 
     public void handleAddonAdded(AddOnAddedEvent event) {
-        Optional<Subscriber> opSub = subscriberRepository.findById(event.getSubscriberId());
+        Optional<Subscriber> opSub = subscriptionService.findById(event.getSubscriberId());
         if (opSub.isEmpty()) {
             log.warn("Subscriber not found: {}", event.getSubscriberId());
             return;
@@ -45,7 +58,7 @@ public class AddOnService {
         Subscriber sub = opSub.get();
 
         // 1. update MRR + mrr_amount
-        Optional<MrrSnapshot> lastOneMrr = mrrSnapshotRepository.findTopByOrderByTimestampDesc();
+        Optional<MrrSnapshot> lastOneMrr = mrrService.findLastOne();
         BigDecimal lastAmount = BigDecimal.ZERO;
         if (lastOneMrr.isPresent())  lastAmount = lastOneMrr.get().getAmount();
         MrrSnapshot mrr = MrrSnapshot.builder()
@@ -54,13 +67,13 @@ public class AddOnService {
                 .delta(event.getMrrAmount())
                 .reason(Trigger.ADDON_ADDED)
                 .build();
-        mrrSnapshotRepository.save(mrr);
+        mrrService.save(mrr);
 
         // 2. update LTV theoric = mrr_amount / churn_rate global
-        Optional<ChurnSnapshot> lastOneChurn = churnSnapshotRepository.findTopByOrderByTimestampDesc();
+        Optional<ChurnSnapshot> lastOneChurn = churnService.findLastOne();
         float lastRate = lastOneChurn.map(ChurnSnapshot::getRate).orElse(0F);
 
-        BigDecimal addonSum = subscriberAddOnRepository.sumActiveAddonsBySubscriber(sub);
+        BigDecimal addonSum = subscriberAddOnService.sumActiveAddonsBySubscriber(sub);
         Double sumAddonPlanSub = addonSum == null ? 0.0 : addonSum.doubleValue();
 
         sumAddonPlanSub += sub.getPlan().getPrice();
@@ -69,7 +82,7 @@ public class AddOnService {
                 ? sumAddonPlanSub
                 : sumAddonPlanSub / lastRate;
 
-        Optional<LtvSnapshot> lastOneLtv = ltvSnapshotRepository.findTopByOrderByTimestampDesc();
+        Optional<LtvSnapshot> lastOneLtv = ltvService.findLastOne();
         BigDecimal lastAmountReal = BigDecimal.ZERO;
         if (lastOneLtv.isPresent()){
             lastAmountReal  = lastOneLtv.get().getAmountReal();
@@ -81,11 +94,11 @@ public class AddOnService {
                 .amountReal(lastAmountReal)
                 .reason(Trigger.ADDON_ADDED)
                 .build();
-        ltvSnapshotRepository.save(ltv);
+        ltvService.save(ltv);
 
 
         // 3. add a record in SubscriberAddOn
-        Optional<AddOn> opAddOn = addOnRepository.findByAddOnType(event.getAddOnType());
+        Optional<AddOn> opAddOn = self.findByAddOnType(event.getAddOnType());
         if (opAddOn.isEmpty()) {
             log.warn("AddOn not found: {}", event.getAddOnType());
             return;
@@ -98,11 +111,11 @@ public class AddOnService {
                 .endedAt(null)
                 .build();
 
-        subscriberAddOnRepository.save(subAddOn);
+        subscriberAddOnService.save(subAddOn);
     }
 
     public void handleAddonRemoved(AddOnRemovedEvent event) {
-        Optional<Subscriber> opSub = subscriberRepository.findById(event.getSubscriberId());
+        Optional<Subscriber> opSub = subscriptionService.findById(event.getSubscriberId());
         if (opSub.isEmpty()) {
             log.warn("Subscriber not found: {}", event.getSubscriberId());
             return;
@@ -110,7 +123,7 @@ public class AddOnService {
         Subscriber sub = opSub.get();
 
         // 1. update MRR + mrr_amount
-        Optional<MrrSnapshot> lastOneMrr = mrrSnapshotRepository.findTopByOrderByTimestampDesc();
+        Optional<MrrSnapshot> lastOneMrr = mrrService.findLastOne();
         BigDecimal lastAmount = BigDecimal.ZERO;
         if (lastOneMrr.isPresent())  lastAmount = lastOneMrr.get().getAmount();
         MrrSnapshot mrr = MrrSnapshot.builder()
@@ -119,13 +132,13 @@ public class AddOnService {
                 .delta(event.getMrrAmount().negate())
                 .reason(Trigger.ADDON_REMOVED)
                 .build();
-        mrrSnapshotRepository.save(mrr);
+        mrrService.save(mrr);
 
         // 2. update LTV theoric = mrr_amount / churn_rate global
-        Optional<ChurnSnapshot> lastOneChurn = churnSnapshotRepository.findTopByOrderByTimestampDesc();
+        Optional<ChurnSnapshot> lastOneChurn = churnService.findLastOne();
         float lastRate = lastOneChurn.map(ChurnSnapshot::getRate).orElse(0F);
 
-        BigDecimal addonSum = subscriberAddOnRepository.sumActiveAddonsBySubscriber(sub);
+        BigDecimal addonSum = subscriberAddOnService.sumActiveAddonsBySubscriber(sub);
         Double sumAddonPlanSub = addonSum == null ? 0.0 : addonSum.doubleValue();
 
         sumAddonPlanSub += sub.getPlan().getPrice();
@@ -137,7 +150,7 @@ public class AddOnService {
                 ? sumAddonPlanSub
                 : sumAddonPlanSub / lastRate;
 
-        Optional<LtvSnapshot> lastOneLtv = ltvSnapshotRepository.findTopByOrderByTimestampDesc();
+        Optional<LtvSnapshot> lastOneLtv = ltvService.findLastOne();
         BigDecimal lastAmountReal = BigDecimal.ZERO;
         if (lastOneLtv.isPresent()){
             lastAmountReal  = lastOneLtv.get().getAmountReal();
@@ -149,17 +162,17 @@ public class AddOnService {
                 .amountReal(lastAmountReal)
                 .reason(Trigger.ADDON_REMOVED)
                 .build();
-        ltvSnapshotRepository.save(ltv);
+        ltvService.save(ltv);
 
 
         // 3. set remove in SubscriberAddOn
 
-        Optional<SubscriberAddOn> subAddOn = subscriberAddOnRepository
+        Optional<SubscriberAddOn> subAddOn = subscriberAddOnService
                 .findActiveBySubscriberAndAddOnType(sub, event.getAddOnType());
 
         if (subAddOn.isPresent()){
             subAddOn.get().setEndedAt(LocalDateTime.now());
-            subscriberAddOnRepository.save(subAddOn.get());
+            subscriberAddOnService.save(subAddOn.get());
         }
 
     }

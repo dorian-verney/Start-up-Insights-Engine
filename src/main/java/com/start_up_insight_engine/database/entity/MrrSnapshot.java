@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -17,7 +18,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "MRR_SNAPSHOT")
-public class MrrSnapshot {
+public class MrrSnapshot implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

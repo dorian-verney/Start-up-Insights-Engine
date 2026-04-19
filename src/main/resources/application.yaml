@@ -31,3 +31,14 @@ spring:
     show-sql: true
     defer-datasource-initialization: true  # waiting for scheam ready before seeding database
 
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000ms
+
+  cache:
+    type: redis
+    redis:
+      time-to-live: 600000
+

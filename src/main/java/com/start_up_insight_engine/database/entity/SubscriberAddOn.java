@@ -3,6 +3,7 @@ package com.start_up_insight_engine.database.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Builder
@@ -12,7 +13,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "SUBSCRIBER_ADD_ON")
-public class SubscriberAddOn {
+public class SubscriberAddOn implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

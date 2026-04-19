@@ -1,9 +1,9 @@
 package com.start_up_insight_engine.database.entity;
 
-import com.start_up_insight_engine.database.enums.PlanType;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Builder
@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "SUBSCRIBER")
-public class Subscriber {
+public class Subscriber implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
