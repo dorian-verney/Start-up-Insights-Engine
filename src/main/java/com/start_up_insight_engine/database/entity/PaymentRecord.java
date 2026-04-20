@@ -41,4 +41,8 @@ public class PaymentRecord implements Serializable {
     @Enumerated(EnumType.STRING)
     private AddOnType addOnType;
 
+    @ManyToOne
+    @JoinColumn(nullable = false)
+    private Company company;
+
 }

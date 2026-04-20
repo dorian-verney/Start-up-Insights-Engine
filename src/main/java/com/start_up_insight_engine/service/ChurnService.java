@@ -1,6 +1,7 @@
 package com.start_up_insight_engine.service;
 
 import com.start_up_insight_engine.database.entity.ChurnSnapshot;
+import com.start_up_insight_engine.database.entity.Company;
 import com.start_up_insight_engine.repository.ChurnSnapshotRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
@@ -18,26 +19,27 @@ public class ChurnService {
     @Autowired
     private ChurnSnapshotRepository churnSnapshotRepository;
 
-    @Cacheable(value = "churn-latest")
-    public Optional<ChurnSnapshot> findLastOne(){
-        return churnSnapshotRepository.findTopByOrderByTimestampDesc();
+    @Cacheable(value = "churn-latest", key="#company.id")
+    public Optional<ChurnSnapshot> findLastOne(Company company){
+        return churnSnapshotRepository.findTopByCompanyOrderByTimestampDesc(company);
     }
 
-    @Cacheable(value = "churn-all")
-    public List<ChurnSnapshot> findAll(){
-        return churnSnapshotRepository.findAll();
+    @Cacheable(value = "churn-all", key = "#company.id")
+    public List<ChurnSnapshot> findAll(Company company){
+        return churnSnapshotRepository.findByCompany(company);
     }
 
-    @Cacheable(value = "churn-range-to", key = "#date.toString()")
-    public List<ChurnSnapshot> findToMonth(LocalDateTime date){
-        return churnSnapshotRepository.findByTimestampBetween(
+    @Cacheable(value = "churn-range-to", key = "#company.id + '-' + #date.toString()")
+    public List<ChurnSnapshot> findToMonth(Company company, LocalDateTime date){
+        return churnSnapshotRepository.findByCompanyAndTimestampBetween(
+                company,
                 LocalDateTime.ofEpochSecond(0, 0, ZoneOffset.UTC),
                 date);
     }
 
-    @Cacheable(value = "churn-range-from", key = "#date.toString()")
-    public List<ChurnSnapshot> findFromMonth(LocalDateTime date){
-        return churnSnapshotRepository.findByTimestampBetween(date, LocalDateTime.now());
+    @Cacheable(value = "churn-range-from", key = "#company.id + '-' + #date.toString()")
+    public List<ChurnSnapshot> findFromMonth(Company company, LocalDateTime date){
+        return churnSnapshotRepository.findByCompanyAndTimestampBetween(company, date, LocalDateTime.now());
     }
 
     // Invalidate cache — (example : called by handleSubscriptionStarted)

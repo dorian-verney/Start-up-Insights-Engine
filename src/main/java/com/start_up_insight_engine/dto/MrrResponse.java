@@ -1,5 +1,6 @@
 package com.start_up_insight_engine.dto;
 
+import com.start_up_insight_engine.database.entity.Company;
 import com.start_up_insight_engine.database.enums.Trigger;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,4 +20,6 @@ public class MrrResponse {
     private BigDecimal delta;  // variation avec new action
 
     private Trigger reason;
+
+    private Company company;
 }

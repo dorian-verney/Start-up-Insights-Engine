@@ -1,5 +1,6 @@
 package com.start_up_insight_engine.dto;
 
+import com.start_up_insight_engine.database.entity.Company;
 import com.start_up_insight_engine.database.enums.Trigger;
 import jakarta.persistence.Column;
 import lombok.Builder;
@@ -21,4 +22,6 @@ public class RunwayResponse {
     private Double runway;
 
     private Trigger reason;
+
+    private Company company;
 }

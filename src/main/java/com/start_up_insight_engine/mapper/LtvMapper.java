@@ -14,6 +14,7 @@ public class LtvMapper {
                 .amountTheoric(ltv.getAmountTheoric())
                 .amountReal(ltv.getAmountReal())
                 .reason(ltv.getReason())
+                .company(ltv.getCompany())
                 .build();
     }
 }

@@ -13,6 +13,7 @@ public class MrrMapper {
                 .amount(mrr.getAmount())
                 .delta(mrr.getDelta())
                 .reason(mrr.getReason())
+                .company(mrr.getCompany())
                 .build();
     }
 }

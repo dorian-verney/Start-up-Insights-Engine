@@ -2,6 +2,7 @@ package com.start_up_insight_engine.controller;
 
 
 import com.start_up_insight_engine.database.entity.ChurnSnapshot;
+import com.start_up_insight_engine.database.entity.Company;
 import com.start_up_insight_engine.database.entity.LtvSnapshot;
 import com.start_up_insight_engine.database.entity.MrrSnapshot;
 import com.start_up_insight_engine.database.entity.RunwaySnapshot;
@@ -14,9 +15,9 @@ import com.start_up_insight_engine.mapper.LtvMapper;
 import com.start_up_insight_engine.mapper.MrrMapper;
 import com.start_up_insight_engine.mapper.RunwayMapper;
 import com.start_up_insight_engine.service.ChurnService;
+import com.start_up_insight_engine.service.CompanyService;
 import com.start_up_insight_engine.service.LtvService;
 import com.start_up_insight_engine.service.MrrService;
-
 import com.start_up_insight_engine.service.RunwayService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -24,18 +25,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.Month;
-import java.time.Year;
 import java.time.YearMonth;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
+
 @CrossOrigin(origins = {
         "http://localhost:5173"
 //        "https://ton-frontend.vercel.app"
 })
 @RestController
-@RequestMapping("/api/metrics")
+@RequestMapping("/api/metrics/{companyId}")
 public class MetricsController {
 
     @Autowired
@@ -58,28 +58,38 @@ public class MetricsController {
     @Autowired
     RunwayMapper runwayMapper;
 
+    @Autowired
+    CompanyService companyService;
+
+    private Company findById(Long companyId) {
+        return companyService.findById(companyId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Company not found"));
+    }
 
     // -----------------------------------------------
     // MRR MAPPING
     // -----------------------------------------------
     @GetMapping("/mrr")
-    public ResponseEntity<MrrResponse> getLastOneMrr() {
-        MrrSnapshot snap = mrrService.findLastOne()
+    public ResponseEntity<MrrResponse> getLastOneMrr(@PathVariable Long companyId) {
+        Company company = findById(companyId);
+        MrrSnapshot snap = mrrService.findLastOne(company)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "MRR not found"));
         return ResponseEntity.ok(mrrMapper.toDto(snap));
     }
 
     @GetMapping("/mrr/history")
-    public ResponseEntity<List<MrrResponse>> getAllMrr() {
-        List<MrrSnapshot> snaps = mrrService.findAll();
+    public ResponseEntity<List<MrrResponse>> getAllMrr(@PathVariable Long companyId) {
+        Company company = findById(companyId);
+        List<MrrSnapshot> snaps = mrrService.findAll(company);
         return ResponseEntity.ok(snaps.stream().map(mrrMapper::toDto).collect(toList()));
     }
 
     @GetMapping("/mrr/before/{year}/{month}")
     public ResponseEntity<List<MrrResponse>> getToMonthMrr(
-            @PathVariable int year, @PathVariable int month
+            @PathVariable Long companyId, @PathVariable int year, @PathVariable int month
     ) {
-        List<MrrSnapshot> snaps = mrrService.findToMonth(YearMonth.of(year, month)
+        Company company = findById(companyId);
+        List<MrrSnapshot> snaps = mrrService.findToMonth(company, YearMonth.of(year, month)
                         .atDay(1)
                         .atStartOfDay());
         return ResponseEntity.ok(snaps.stream().map(mrrMapper::toDto).collect(toList()));
@@ -87,9 +97,10 @@ public class MetricsController {
 
     @GetMapping("/mrr/after/{year}/{month}")
     public ResponseEntity<List<MrrResponse>> getFromMonthMrr(
-            @PathVariable int year, @PathVariable int month
+            @PathVariable Long companyId, @PathVariable int year, @PathVariable int month
     ) {
-        List<MrrSnapshot> snaps = mrrService.findFromMonth(YearMonth.of(year, month)
+        Company company = findById(companyId);
+        List<MrrSnapshot> snaps = mrrService.findFromMonth(company, YearMonth.of(year, month)
                         .atDay(1)
                         .atStartOfDay());
         return ResponseEntity.ok(snaps.stream().map(mrrMapper::toDto).collect(toList()));
@@ -100,23 +111,26 @@ public class MetricsController {
     // CHURN MAPPING
     // -----------------------------------------------
     @GetMapping("/churn")
-    public ResponseEntity<ChurnResponse> getLastOneChurn() {
-        ChurnSnapshot snap = churnService.findLastOne()
+    public ResponseEntity<ChurnResponse> getLastOneChurn(@PathVariable Long companyId) {
+        Company company = findById(companyId);
+        ChurnSnapshot snap = churnService.findLastOne(company)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Churn not found"));
         return ResponseEntity.ok(churnMapper.toDto(snap));
     }
 
     @GetMapping("/churn/history")
-    public ResponseEntity<List<ChurnResponse>> getAllChurn() {
-        List<ChurnSnapshot> snaps = churnService.findAll();
+    public ResponseEntity<List<ChurnResponse>> getAllChurn(@PathVariable Long companyId) {
+        Company company = findById(companyId);
+        List<ChurnSnapshot> snaps = churnService.findAll(company);
         return ResponseEntity.ok(snaps.stream().map(churnMapper::toDto).collect(toList()));
     }
 
     @GetMapping("/churn/before/{year}/{month}")
     public ResponseEntity<List<ChurnResponse>> getToMonthChurn(
-            @PathVariable int year, @PathVariable int month
+            @PathVariable Long companyId, @PathVariable int year, @PathVariable int month
     ) {
-        List<ChurnSnapshot> snaps = churnService.findToMonth(YearMonth.of(year, month)
+        Company company = findById(companyId);
+        List<ChurnSnapshot> snaps = churnService.findToMonth(company, YearMonth.of(year, month)
                 .atDay(1)
                 .atStartOfDay());
         return ResponseEntity.ok(snaps.stream().map(churnMapper::toDto).collect(toList()));
@@ -124,9 +138,10 @@ public class MetricsController {
 
     @GetMapping("/churn/after/{year}/{month}")
     public ResponseEntity<List<ChurnResponse>> getFromMonthChurn(
-            @PathVariable int year, @PathVariable int month
+            @PathVariable Long companyId, @PathVariable int year, @PathVariable int month
     ) {
-        List<ChurnSnapshot> snaps = churnService.findFromMonth(YearMonth.of(year, month)
+        Company company = findById(companyId);
+        List<ChurnSnapshot> snaps = churnService.findFromMonth(company, YearMonth.of(year, month)
                 .atDay(1)
                 .atStartOfDay());
         return ResponseEntity.ok(snaps.stream().map(churnMapper::toDto).collect(toList()));
@@ -137,23 +152,26 @@ public class MetricsController {
     // LTV MAPPING
     // -----------------------------------------------
     @GetMapping("/ltv")
-    public ResponseEntity<LtvResponse> getLastOneLtv() {
-        LtvSnapshot snap = ltvService.findLastOne()
+    public ResponseEntity<LtvResponse> getLastOneLtv(@PathVariable Long companyId) {
+        Company company = findById(companyId);
+        LtvSnapshot snap = ltvService.findLastOne(company)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "LTV not found"));
         return ResponseEntity.ok(ltvMapper.toDto(snap));
     }
 
     @GetMapping("/ltv/history")
-    public ResponseEntity<List<LtvResponse>> getAllLtv() {
-        List<LtvSnapshot> snaps = ltvService.findAll();
+    public ResponseEntity<List<LtvResponse>> getAllLtv(@PathVariable Long companyId) {
+        Company company = findById(companyId);
+        List<LtvSnapshot> snaps = ltvService.findAll(company);
         return ResponseEntity.ok(snaps.stream().map(ltvMapper::toDto).collect(toList()));
     }
 
     @GetMapping("/ltv/before/{year}/{month}")
     public ResponseEntity<List<LtvResponse>> getToMonthLtv(
-            @PathVariable int year, @PathVariable int month
+            @PathVariable Long companyId, @PathVariable int year, @PathVariable int month
     ) {
-        List<LtvSnapshot> snaps = ltvService.findToMonth(YearMonth.of(year, month)
+        Company company = findById(companyId);
+        List<LtvSnapshot> snaps = ltvService.findToMonth(company, YearMonth.of(year, month)
                 .atDay(1)
                 .atStartOfDay());
         return ResponseEntity.ok(snaps.stream().map(ltvMapper::toDto).collect(toList()));
@@ -161,9 +179,10 @@ public class MetricsController {
 
     @GetMapping("/ltv/after/{year}/{month}")
     public ResponseEntity<List<LtvResponse>> getFromMonthLtv(
-            @PathVariable int year, @PathVariable int month
+            @PathVariable Long companyId, @PathVariable int year, @PathVariable int month
     ) {
-        List<LtvSnapshot> snaps = ltvService.findFromMonth(YearMonth.of(year, month)
+        Company company = findById(companyId);
+        List<LtvSnapshot> snaps = ltvService.findFromMonth(company, YearMonth.of(year, month)
                 .atDay(1)
                 .atStartOfDay());
         return ResponseEntity.ok(snaps.stream().map(ltvMapper::toDto).collect(toList()));
@@ -174,23 +193,26 @@ public class MetricsController {
     // RUNWAY MAPPING
     // -----------------------------------------------
     @GetMapping("/runway")
-    public ResponseEntity<RunwayResponse> getLastOneRunway() {
-        RunwaySnapshot snap = runwayService.findLastOne()
+    public ResponseEntity<RunwayResponse> getLastOneRunway(@PathVariable Long companyId) {
+        Company company = findById(companyId);
+        RunwaySnapshot snap = runwayService.findLastOne(company)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Runway not found"));
         return ResponseEntity.ok(runwayMapper.toDto(snap));
     }
 
     @GetMapping("/runway/history")
-    public ResponseEntity<List<RunwayResponse>> getAllRunway() {
-        List<RunwaySnapshot> snaps = runwayService.findAll();
+    public ResponseEntity<List<RunwayResponse>> getAllRunway(@PathVariable Long companyId) {
+        Company company = findById(companyId);
+        List<RunwaySnapshot> snaps = runwayService.findAll(company);
         return ResponseEntity.ok(snaps.stream().map(runwayMapper::toDto).collect(toList()));
     }
 
     @GetMapping("/runway/before/{year}/{month}")
     public ResponseEntity<List<RunwayResponse>> getToMonthRunway(
-            @PathVariable int year, @PathVariable int month
+            @PathVariable Long companyId, @PathVariable int year, @PathVariable int month
     ) {
-        List<RunwaySnapshot> snaps = runwayService.findToMonth(YearMonth.of(year, month)
+        Company company = findById(companyId);
+        List<RunwaySnapshot> snaps = runwayService.findToMonth(company, YearMonth.of(year, month)
                 .atDay(1)
                 .atStartOfDay());
         return ResponseEntity.ok(snaps.stream().map(runwayMapper::toDto).collect(toList()));
@@ -198,9 +220,10 @@ public class MetricsController {
 
     @GetMapping("/runway/after/{year}/{month}")
     public ResponseEntity<List<RunwayResponse>> getFromMonthRunway(
-            @PathVariable int year, @PathVariable int month
+            @PathVariable Long companyId, @PathVariable int year, @PathVariable int month
     ) {
-        List<RunwaySnapshot> snaps = runwayService.findFromMonth(YearMonth.of(year, month)
+        Company company = findById(companyId);
+        List<RunwaySnapshot> snaps = runwayService.findFromMonth(company, YearMonth.of(year, month)
                 .atDay(1)
                 .atStartOfDay());
         return ResponseEntity.ok(snaps.stream().map(runwayMapper::toDto).collect(toList()));

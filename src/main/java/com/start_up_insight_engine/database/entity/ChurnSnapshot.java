@@ -34,4 +34,8 @@ public class ChurnSnapshot implements Serializable {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Trigger reason;
+
+    @ManyToOne
+    @JoinColumn(nullable = false)
+    private Company company;
 }

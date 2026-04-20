@@ -28,6 +28,9 @@ public class PaymentService {
     @Autowired
     private PaymentRecordService paymentRecordService;
 
+    @Autowired
+    private CompanyService companyService;
+
 
 
     public void handlePaymentSucceeded(PaymentSucceededEvent event){
@@ -38,17 +41,25 @@ public class PaymentService {
         }
         Subscriber sub = opSub.get();
 
+        Optional<Company> opCompany = companyService.findById(event.getCompanyId());
+        if (opCompany.isEmpty()) {
+            log.warn("Company not found: {}", event.getCompanyId());
+            return;
+        }
+        Company company = opCompany.get();
+
         // 1. add a payment record
         PaymentRecord payment = PaymentRecord.builder()
                 .subscriber(sub)
                 .timestamp(event.getEventTime())
                 .price(event.getAmount())
                 .paymentType(event.getPaymentType())
+                .company(company)
                 .build();
         paymentRecordService.save(payment);
 
         // 2. update runway -> cash + amount
-        Optional<RunwaySnapshot> lastRunAway = runwayService.findLastOne();
+        Optional<RunwaySnapshot> lastRunAway = runwayService.findLastOne(company);
 
         BigDecimal newLiquidity = new BigDecimal(event.getAmount());
         BigDecimal totalCost = BigDecimal.ZERO;
@@ -67,6 +78,7 @@ public class PaymentService {
                 .totalCost(totalCost)
                 .runway(newRunway)
                 .reason(Trigger.PAYMENT_SUCCEEDED)
+                .company(company)
                 .build();
         runwayService.save(runwaySnapshot);
     }
@@ -84,17 +96,25 @@ public class PaymentService {
         }
         Subscriber sub = opSub.get();
 
+        Optional<Company> opCompany = companyService.findById(event.getCompanyId());
+        if (opCompany.isEmpty()) {
+            log.warn("Company not found: {}", event.getCompanyId());
+            return;
+        }
+        Company company = opCompany.get();
+
         // 1. add a payment record
         PaymentRecord payment = PaymentRecord.builder()
                 .subscriber(sub)
                 .timestamp(event.getEventTime())
                 .price(event.getAmount())
                 .paymentType(PaymentType.ADDON)
+                .company(company)
                 .build();
         paymentRecordService.save(payment);
 
         // 2. update runway -> cash + amount
-        Optional<RunwaySnapshot> lastRunAway = runwayService.findLastOne();
+        Optional<RunwaySnapshot> lastRunAway = runwayService.findLastOne(company);
 
         BigDecimal newLiquidity = new BigDecimal(event.getAmount());
         BigDecimal totalCost = BigDecimal.ZERO;
@@ -113,6 +133,7 @@ public class PaymentService {
                 .totalCost(totalCost)
                 .runway(newRunway)
                 .reason(Trigger.ONE_TIME_PAYMENT)
+                .company(company)
                 .build();
         runwayService.save(runwaySnapshot);
     }

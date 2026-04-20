@@ -38,4 +38,8 @@ public class RunwaySnapshot implements Serializable {
     @Column(nullable = false)
     private Trigger reason;
 
+    @ManyToOne
+    @JoinColumn(nullable = false)
+    private Company company;
+
 }

@@ -14,6 +14,7 @@ public class ChurnMapper {
                 .rate(churn.getRate())
                 .activeSubscribers(churn.getActiveSubscribers())
                 .reason(churn.getReason())
+                .company(churn.getCompany())
                 .build();
     }
 }

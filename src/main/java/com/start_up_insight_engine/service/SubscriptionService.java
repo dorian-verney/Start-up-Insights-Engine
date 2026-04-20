@@ -45,6 +45,9 @@ public class SubscriptionService {
     @Autowired
     private PlanService planService;
 
+    @Autowired
+    private CompanyService companyService;
+
 
     @Cacheable(value = "subscriber-id", key = "#id")
     public Optional<Subscriber> findById(long id){
@@ -70,6 +73,12 @@ public class SubscriptionService {
     }
 
     public void handleSubscriptionStarted(SubscriptionStartedEvent event) {
+        Optional<Company> opCompany = companyService.findById(event.getCompanyId());
+        if (opCompany.isEmpty()) {
+            log.warn("Company not found: {}", event.getCompanyId());
+            return;
+        }
+        Company company = opCompany.get();
 
         // 1. New subscriber to persist in database
         Plan plan = planService.findByPlanType(event.getPlantype())
@@ -80,11 +89,12 @@ public class SubscriptionService {
                 .email(event.getSubscriberEmail())
                 .plan(plan)
                 .subscribedAt(event.getEventTime())
+                .company(company)
                 .build();
         self.save(sub);
 
         // 2. Update MRR → new MrrSnapshot
-        Optional<MrrSnapshot> lastOneMrr = mrrService.findLastOne();
+        Optional<MrrSnapshot> lastOneMrr = mrrService.findLastOne(company);
         BigDecimal lastAmount = BigDecimal.ZERO;
         if (lastOneMrr.isPresent())  lastAmount = lastOneMrr.get().getAmount();
         MrrSnapshot mrr = MrrSnapshot.builder()
@@ -92,11 +102,12 @@ public class SubscriptionService {
                 .amount(lastAmount.add(event.getMrrAmount()))
                 .delta(event.getMrrAmount())
                 .reason(Trigger.SUB_STARTED)
+                .company(company)
                 .build();
         mrrService.save(mrr);
 
         // 3. Update churn → increment active subs
-        Optional<ChurnSnapshot> lastOneChurn = churnService.findLastOne();
+        Optional<ChurnSnapshot> lastOneChurn = churnService.findLastOne(company);
         Long lastActiveSubscribers = 0L;
         float lastRate             = 0F;
         if (lastOneChurn.isPresent()){
@@ -109,11 +120,12 @@ public class SubscriptionService {
                 .rate(lastRate)
                 .activeSubscribers(lastActiveSubscribers+1)
                 .reason(Trigger.SUB_STARTED)
+                .company(company)
                 .build();
         churnService.save(churn);
 
         // 4. Compute theoric LTV → new LtvSnapshot
-        Optional<LtvSnapshot> lastOneLtv = ltvService.findLastOne();
+        Optional<LtvSnapshot> lastOneLtv = ltvService.findLastOne(company);
         BigDecimal lastAmountReal = BigDecimal.ZERO;
         if (lastOneLtv.isPresent()){
             lastAmountReal    = lastOneLtv.get().getAmountReal();
@@ -127,14 +139,21 @@ public class SubscriptionService {
                 .amountTheoric(theoricLtv)
                 .amountReal(lastAmountReal)
                 .reason(Trigger.SUB_STARTED)
+                .company(company)
                 .build();
         ltvService.save(ltv);
     }
 
     public void handleSubscriptionCancelled(SubscriptionCancelledEvent event) {
+        Optional<Company> opCompany = companyService.findById(event.getCompanyId());
+        if (opCompany.isEmpty()) {
+            log.warn("Company not found: {}", event.getCompanyId());
+            return;
+        }
+        Company company = opCompany.get();
 
         // 1. Update MRR → new MrrSnapshot
-        Optional<MrrSnapshot> lastOneMrr = mrrService.findLastOne();
+        Optional<MrrSnapshot> lastOneMrr = mrrService.findLastOne(company);
         BigDecimal lastAmount = lastOneMrr.isEmpty()
                  ? BigDecimal.ZERO
                  : lastOneMrr.get().getAmount();
@@ -152,12 +171,13 @@ public class SubscriptionService {
                 .amount(lastAmount.subtract(lastMrrSub))
                 .delta(lastMrrSub.negate())
                 .reason(Trigger.SUB_CANCELLED)
+                .company(company)
                 .build();
         mrrService.save(mrr);
 
 
         // 2. Update churn → decrement active subs + increment churn this month
-        Optional<ChurnSnapshot> lastOneChurn = churnService.findLastOne();
+        Optional<ChurnSnapshot> lastOneChurn = churnService.findLastOne(company);
         Long lastActiveSubscribers = lastOneChurn.isEmpty()
                 ? 0L
                 : lastOneChurn.get().getActiveSubscribers();
@@ -181,6 +201,7 @@ public class SubscriptionService {
                 .rate(newRate)
                 .activeSubscribers(lastActiveSubscribers-1)
                 .reason(Trigger.SUB_CANCELLED)
+                .company(company)
                 .build();
         churnService.save(churn);
 
@@ -196,6 +217,7 @@ public class SubscriptionService {
                 .amountTheoric(theoricLtv)
                 .amountReal(mrrSubTotal)
                 .reason(Trigger.SUB_CANCELLED)
+                .company(company)
                 .build();
         ltvService.save(ltv);
 
@@ -205,6 +227,13 @@ public class SubscriptionService {
     }
 
     public void handlePlanChanged(PlanChangedEvent event) {
+        Optional<Company> opCompany = companyService.findById(event.getCompanyId());
+        if (opCompany.isEmpty()) {
+            log.warn("Company not found: {}", event.getCompanyId());
+            return;
+        }
+        Company company = opCompany.get();
+
         // 1. Update MRR → new MrrSnapshot
         Optional<Subscriber> opSub = self.findById(event.getSubscriberId());
         if (opSub.isEmpty()) {
@@ -213,7 +242,7 @@ public class SubscriptionService {
         }
         Subscriber sub = opSub.get();
 
-        Optional<MrrSnapshot> lastOneMrr = mrrService.findLastOne();
+        Optional<MrrSnapshot> lastOneMrr = mrrService.findLastOne(company);
         BigDecimal lastAmount = lastOneMrr.isEmpty()
                 ? BigDecimal.ZERO
                 : lastOneMrr.get().getAmount();
@@ -224,15 +253,16 @@ public class SubscriptionService {
                 .amount(lastAmount.add(diffPricePlan))
                 .delta(diffPricePlan)
                 .reason(Trigger.PLAN_CHANGED)
+                .company(company)
                 .build();
         mrrService.save(mrr);
 
         // 2. Update LTV theoric
-        Optional<ChurnSnapshot> lastOneChurn = churnService.findLastOne();
+        Optional<ChurnSnapshot> lastOneChurn = churnService.findLastOne(company);
 
         float lastRate = lastOneChurn.map(ChurnSnapshot::getRate).orElse(0F);
 
-        Optional<LtvSnapshot> lastOneLtv = ltvService.findLastOne();
+        Optional<LtvSnapshot> lastOneLtv = ltvService.findLastOne(company);
         BigDecimal lastAmountReal = BigDecimal.ZERO;
         if (lastOneLtv.isPresent()){
             lastAmountReal    = lastOneLtv.get().getAmountReal();
@@ -246,6 +276,7 @@ public class SubscriptionService {
                 .amountTheoric(theoricLtv)
                 .amountReal(lastAmountReal)
                 .reason(Trigger.PLAN_CHANGED)
+                .company(company)
                 .build();
         ltvService.save(ltv);
 

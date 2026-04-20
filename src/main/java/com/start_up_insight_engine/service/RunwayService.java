@@ -1,6 +1,6 @@
 package com.start_up_insight_engine.service;
 
-import com.start_up_insight_engine.database.entity.MrrSnapshot;
+import com.start_up_insight_engine.database.entity.Company;
 import com.start_up_insight_engine.database.entity.RunwaySnapshot;
 import com.start_up_insight_engine.repository.RunwaySnapshotRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,29 +15,31 @@ import java.util.Optional;
 
 @Service
 public class RunwayService {
+
     @Autowired
     private RunwaySnapshotRepository runwaySnapshotRepository;
 
-    @Cacheable(value = "runway-latest")
-    public Optional<RunwaySnapshot> findLastOne(){
-        return runwaySnapshotRepository.findTopByOrderByTimestampDesc();
+    @Cacheable(value = "runway-latest", key = "#company.id")
+    public Optional<RunwaySnapshot> findLastOne(Company company){
+        return runwaySnapshotRepository.findTopByCompanyOrderByTimestampDesc(company);
     }
 
-    @Cacheable(value = "runway-all")
-    public List<RunwaySnapshot> findAll(){
-        return runwaySnapshotRepository.findAll();
+    @Cacheable(value = "runway-all", key = "#company.id")
+    public List<RunwaySnapshot> findAll(Company company){
+        return runwaySnapshotRepository.findByCompany(company);
     }
 
-    @Cacheable(value = "runway-range-to", key = "#date.toString()")
-    public List<RunwaySnapshot> findToMonth(LocalDateTime date){
-        return runwaySnapshotRepository.findByTimestampBetween(
+    @Cacheable(value = "runway-range-to", key = "#company.id + '-' + #date.toString()")
+    public List<RunwaySnapshot> findToMonth(Company company, LocalDateTime date){
+        return runwaySnapshotRepository.findByCompanyAndTimestampBetween(
+                company,
                 LocalDateTime.ofEpochSecond(0, 0, ZoneOffset.UTC),
                 date);
     }
 
-    @Cacheable(value = "runway-range-from", key = "#date.toString()")
-    public List<RunwaySnapshot> findFromMonth(LocalDateTime date){
-        return runwaySnapshotRepository.findByTimestampBetween(date, LocalDateTime.now());
+    @Cacheable(value = "runway-range-from", key = "#company.id + '-' + #date.toString()")
+    public List<RunwaySnapshot> findFromMonth(Company company, LocalDateTime date){
+        return runwaySnapshotRepository.findByCompanyAndTimestampBetween(company, date, LocalDateTime.now());
     }
 
     // Invalidate cache — (example : called by handleSubscriptionStarted)

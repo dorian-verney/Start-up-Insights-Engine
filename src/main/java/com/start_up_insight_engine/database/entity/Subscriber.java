@@ -35,4 +35,8 @@ public class Subscriber implements Serializable {
     @Column(nullable = true)
     private LocalDateTime cancelledAt; // null si toujours actif
 
+    @ManyToOne
+    @JoinColumn(nullable = false)
+    private Company company;
+
 }

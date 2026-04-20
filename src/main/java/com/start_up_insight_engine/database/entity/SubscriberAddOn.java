@@ -32,4 +32,8 @@ public class SubscriberAddOn implements Serializable {
     @Column(nullable = true)
     private LocalDateTime endedAt; // null si toujours actif
 
+    @ManyToOne
+    @JoinColumn(nullable = false)
+    private Company company;
+
 }

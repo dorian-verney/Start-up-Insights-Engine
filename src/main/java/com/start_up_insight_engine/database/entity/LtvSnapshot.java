@@ -34,4 +34,8 @@ public class LtvSnapshot implements Serializable {
 
     @Column(nullable = false)
     private Trigger reason;
+
+    @ManyToOne
+    @JoinColumn(nullable = false)
+    private Company company;
 }

@@ -10,6 +10,8 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
+// TODO design pattern strategy
+
 @Service
 @Slf4j
 public class AddOnConsumer {

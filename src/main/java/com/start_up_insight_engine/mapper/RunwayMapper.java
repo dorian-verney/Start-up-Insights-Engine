@@ -14,6 +14,7 @@ public class RunwayMapper {
                 .totalCost(runway.getTotalCost())
                 .runway(runway.getRunway())
                 .reason(runway.getReason())
+                .company(runway.getCompany())
                 .build();
 
     }

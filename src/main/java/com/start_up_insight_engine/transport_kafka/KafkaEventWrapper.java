@@ -22,4 +22,7 @@ public class KafkaEventWrapper {
 
     @NotNull
     private Long subscriberId;
+
+    @NotNull
+    private Long companyId;
 }

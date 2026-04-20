@@ -11,6 +11,7 @@ erDiagram
         Plan        plan
         LocalDateTime subscribedAt
         LocalDateTime cancelledAt  "null si actif"
+        Company       company
     }
 
     PAYMENT_RECORD {
@@ -20,6 +21,7 @@ erDiagram
         Integer       price
         PaymentType   paymentType   "SUBSCRIPTION | ADDON"
         AddOnType     addOnType     "nullable — si ADDON payment"
+        Company       company
     }
  
     PLAN {
@@ -41,6 +43,7 @@ erDiagram
         AddOn         addOn      
         LocalDateTime startedAt
         LocalDateTime endedAt        "null si actif"
+        Company       company
     }
  
     SUBSCRIBER }o--|| PLAN             : "souscrit à (ManyToOne)"
@@ -63,6 +66,7 @@ erDiagram
         float         rate              "taux de churn au moment T"
         Long          activeSubscribers
         Trigger       reason            "événement déclencheur"
+        Company       company
     }
  
     MRR_SNAPSHOT {
@@ -71,6 +75,7 @@ erDiagram
         BigDecimal    amount     "MRR total cumulé"
         BigDecimal    delta      "variation due à l'action"
         Trigger       reason
+        Company       company
     }
  
     LTV_SNAPSHOT {
@@ -79,6 +84,7 @@ erDiagram
         Double        amountTheoric   "LTV théorique calculée"
         BigDecimal    amountReal      "LTV réelle observée"
         Trigger       reason
+        Company       company
     }
  
     RUNWAY_SNAPSHOT {
@@ -88,6 +94,7 @@ erDiagram
         BigDecimal    totalCost  "coûts mensuels totaux"
         Double        runway     "mois de runway restants"
         Trigger       reason
+        Company       company
     }
 ```
 

@@ -43,6 +43,9 @@ public class AddOnService {
     @Autowired
     private ChurnService churnService;
 
+    @Autowired
+    private CompanyService companyService;
+
     @Cacheable(value = "addon-type", key = "#addOnType.toString()")
     public Optional<AddOn> findByAddOnType(AddOnType addOnType){
         return addOnRepository.findByAddOnType(addOnType);
@@ -57,8 +60,15 @@ public class AddOnService {
         }
         Subscriber sub = opSub.get();
 
+        Optional<Company> opCompany = companyService.findById(event.getCompanyId());
+        if (opCompany.isEmpty()) {
+            log.warn("Company not found: {}", event.getCompanyId());
+            return;
+        }
+        Company company = opCompany.get();
+
         // 1. update MRR + mrr_amount
-        Optional<MrrSnapshot> lastOneMrr = mrrService.findLastOne();
+        Optional<MrrSnapshot> lastOneMrr = mrrService.findLastOne(company);
         BigDecimal lastAmount = BigDecimal.ZERO;
         if (lastOneMrr.isPresent())  lastAmount = lastOneMrr.get().getAmount();
         MrrSnapshot mrr = MrrSnapshot.builder()
@@ -66,11 +76,12 @@ public class AddOnService {
                 .amount(lastAmount.add(event.getMrrAmount()))
                 .delta(event.getMrrAmount())
                 .reason(Trigger.ADDON_ADDED)
+                .company(company)
                 .build();
         mrrService.save(mrr);
 
         // 2. update LTV theoric = mrr_amount / churn_rate global
-        Optional<ChurnSnapshot> lastOneChurn = churnService.findLastOne();
+        Optional<ChurnSnapshot> lastOneChurn = churnService.findLastOne(company);
         float lastRate = lastOneChurn.map(ChurnSnapshot::getRate).orElse(0F);
 
         BigDecimal addonSum = subscriberAddOnService.sumActiveAddonsBySubscriber(sub);
@@ -82,7 +93,7 @@ public class AddOnService {
                 ? sumAddonPlanSub
                 : sumAddonPlanSub / lastRate;
 
-        Optional<LtvSnapshot> lastOneLtv = ltvService.findLastOne();
+        Optional<LtvSnapshot> lastOneLtv = ltvService.findLastOne(company);
         BigDecimal lastAmountReal = BigDecimal.ZERO;
         if (lastOneLtv.isPresent()){
             lastAmountReal  = lastOneLtv.get().getAmountReal();
@@ -93,6 +104,7 @@ public class AddOnService {
                 .amountTheoric(theoricLtv)
                 .amountReal(lastAmountReal)
                 .reason(Trigger.ADDON_ADDED)
+                .company(company)
                 .build();
         ltvService.save(ltv);
 
@@ -109,6 +121,7 @@ public class AddOnService {
                 .addOn(addOn)
                 .startedAt(LocalDateTime.now())
                 .endedAt(null)
+                .company(company)
                 .build();
 
         subscriberAddOnService.save(subAddOn);
@@ -122,8 +135,15 @@ public class AddOnService {
         }
         Subscriber sub = opSub.get();
 
+        Optional<Company> opCompany = companyService.findById(event.getCompanyId());
+        if (opCompany.isEmpty()) {
+            log.warn("Company not found: {}", event.getCompanyId());
+            return;
+        }
+        Company company = opCompany.get();
+
         // 1. update MRR + mrr_amount
-        Optional<MrrSnapshot> lastOneMrr = mrrService.findLastOne();
+        Optional<MrrSnapshot> lastOneMrr = mrrService.findLastOne(company);
         BigDecimal lastAmount = BigDecimal.ZERO;
         if (lastOneMrr.isPresent())  lastAmount = lastOneMrr.get().getAmount();
         MrrSnapshot mrr = MrrSnapshot.builder()
@@ -131,11 +151,12 @@ public class AddOnService {
                 .amount(lastAmount.subtract(event.getMrrAmount()))
                 .delta(event.getMrrAmount().negate())
                 .reason(Trigger.ADDON_REMOVED)
+                .company(company)
                 .build();
         mrrService.save(mrr);
 
         // 2. update LTV theoric = mrr_amount / churn_rate global
-        Optional<ChurnSnapshot> lastOneChurn = churnService.findLastOne();
+        Optional<ChurnSnapshot> lastOneChurn = churnService.findLastOne(company);
         float lastRate = lastOneChurn.map(ChurnSnapshot::getRate).orElse(0F);
 
         BigDecimal addonSum = subscriberAddOnService.sumActiveAddonsBySubscriber(sub);
@@ -150,7 +171,7 @@ public class AddOnService {
                 ? sumAddonPlanSub
                 : sumAddonPlanSub / lastRate;
 
-        Optional<LtvSnapshot> lastOneLtv = ltvService.findLastOne();
+        Optional<LtvSnapshot> lastOneLtv = ltvService.findLastOne(company);
         BigDecimal lastAmountReal = BigDecimal.ZERO;
         if (lastOneLtv.isPresent()){
             lastAmountReal  = lastOneLtv.get().getAmountReal();
@@ -161,6 +182,7 @@ public class AddOnService {
                 .amountTheoric(theoricLtv)
                 .amountReal(lastAmountReal)
                 .reason(Trigger.ADDON_REMOVED)
+                .company(company)
                 .build();
         ltvService.save(ltv);
 

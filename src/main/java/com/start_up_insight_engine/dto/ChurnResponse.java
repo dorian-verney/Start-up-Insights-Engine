@@ -1,5 +1,6 @@
 package com.start_up_insight_engine.dto;
 
+import com.start_up_insight_engine.database.entity.Company;
 import com.start_up_insight_engine.database.enums.Trigger;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,4 +18,6 @@ public class ChurnResponse {
     private Long activeSubscribers;
 
     private Trigger reason;
+
+    private Company company;
 }
