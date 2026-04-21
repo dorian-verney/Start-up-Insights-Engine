@@ -1,6 +1,7 @@
 package com.start_up_insight_engine.service;
 
 import com.start_up_insight_engine.database.entity.*;
+import com.start_up_insight_engine.exceptions.EventProcessingException;
 import com.start_up_insight_engine.repository.*;
 import com.start_up_insight_engine.transport_kafka.PlanChangedEvent;
 import com.start_up_insight_engine.transport_kafka.SubscriptionCancelledEvent;
@@ -46,7 +47,7 @@ public class SubscriptionService {
     private PlanService planService;
 
     @Autowired
-    private CompanyService companyService;
+    private Helper helper;
 
 
     @Cacheable(value = "subscriber-id", key = "#id")
@@ -72,13 +73,9 @@ public class SubscriptionService {
         return subscriberRepository.save(sub);
     }
 
-    public void handleSubscriptionStarted(SubscriptionStartedEvent event) {
-        Optional<Company> opCompany = companyService.findById(event.getCompanyId());
-        if (opCompany.isEmpty()) {
-            log.warn("Company not found: {}", event.getCompanyId());
-            return;
-        }
-        Company company = opCompany.get();
+
+    public void handleSubscriptionStarted(SubscriptionStartedEvent event) throws EventProcessingException {
+        Company company = helper.requireCompany(event.getCompanyId());
 
         // 1. New subscriber to persist in database
         Plan plan = planService.findByPlanType(event.getPlantype())
@@ -94,9 +91,8 @@ public class SubscriptionService {
         self.save(sub);
 
         // 2. Update MRR → new MrrSnapshot
-        Optional<MrrSnapshot> lastOneMrr = mrrService.findLastOne(company);
-        BigDecimal lastAmount = BigDecimal.ZERO;
-        if (lastOneMrr.isPresent())  lastAmount = lastOneMrr.get().getAmount();
+        BigDecimal lastAmount = helper.lastMrrAmount(company);
+
         MrrSnapshot mrr = MrrSnapshot.builder()
                 .timestamp(event.getEventTime())
                 .amount(lastAmount.add(event.getMrrAmount()))
@@ -107,13 +103,8 @@ public class SubscriptionService {
         mrrService.save(mrr);
 
         // 3. Update churn → increment active subs
-        Optional<ChurnSnapshot> lastOneChurn = churnService.findLastOne(company);
-        Long lastActiveSubscribers = 0L;
-        float lastRate             = 0F;
-        if (lastOneChurn.isPresent()){
-            lastActiveSubscribers = lastOneChurn.get().getActiveSubscribers();
-            lastRate             = lastOneChurn.get().getRate();
-        }
+        Long lastActiveSubscribers = helper.lastChurnActives(company);
+        float lastRate             = helper.lastChurnRate(company);
 
         ChurnSnapshot churn = ChurnSnapshot.builder()
                 .timestamp(event.getEventTime())
@@ -125,11 +116,8 @@ public class SubscriptionService {
         churnService.save(churn);
 
         // 4. Compute theoric LTV → new LtvSnapshot
-        Optional<LtvSnapshot> lastOneLtv = ltvService.findLastOne(company);
-        BigDecimal lastAmountReal = BigDecimal.ZERO;
-        if (lastOneLtv.isPresent()){
-            lastAmountReal    = lastOneLtv.get().getAmountReal();
-        }
+        BigDecimal lastAmountReal = helper.lastLtvAmountReal(company);
+
         Double theoricLtv = lastRate == 0F
                 ? event.getMrrAmount().doubleValue()
                 : event.getMrrAmount().doubleValue() / lastRate;
@@ -144,26 +132,12 @@ public class SubscriptionService {
         ltvService.save(ltv);
     }
 
-    public void handleSubscriptionCancelled(SubscriptionCancelledEvent event) {
-        Optional<Company> opCompany = companyService.findById(event.getCompanyId());
-        if (opCompany.isEmpty()) {
-            log.warn("Company not found: {}", event.getCompanyId());
-            return;
-        }
-        Company company = opCompany.get();
+    public void handleSubscriptionCancelled(SubscriptionCancelledEvent event) throws EventProcessingException {
+        Company company = helper.requireCompany(event.getCompanyId());
+        Subscriber sub = helper.requireSubscriber(event.getSubscriberId());
 
         // 1. Update MRR → new MrrSnapshot
-        Optional<MrrSnapshot> lastOneMrr = mrrService.findLastOne(company);
-        BigDecimal lastAmount = lastOneMrr.isEmpty()
-                 ? BigDecimal.ZERO
-                 : lastOneMrr.get().getAmount();
-
-        Optional<Subscriber> opSub = self.findById(event.getSubscriberId());
-        if (opSub.isEmpty()) {
-            log.warn("Subscriber not found: {}", event.getSubscriberId());
-            return;
-        }
-        Subscriber sub = opSub.get();
+        BigDecimal lastAmount = helper.lastMrrAmount(company);
         BigDecimal lastMrrSub = new BigDecimal(sub.getPlan().getPrice());
 
         MrrSnapshot mrr = MrrSnapshot.builder()
@@ -177,11 +151,7 @@ public class SubscriptionService {
 
 
         // 2. Update churn → decrement active subs + increment churn this month
-        Optional<ChurnSnapshot> lastOneChurn = churnService.findLastOne(company);
-        Long lastActiveSubscribers = lastOneChurn.isEmpty()
-                ? 0L
-                : lastOneChurn.get().getActiveSubscribers();
-
+        Long lastActiveSubscribers = helper.lastChurnActives(company);
 
         LocalDateTime startOfMonth = event.getEventTime()
                 .withDayOfMonth(1)
@@ -226,26 +196,13 @@ public class SubscriptionService {
         self.save(sub);
     }
 
-    public void handlePlanChanged(PlanChangedEvent event) {
-        Optional<Company> opCompany = companyService.findById(event.getCompanyId());
-        if (opCompany.isEmpty()) {
-            log.warn("Company not found: {}", event.getCompanyId());
-            return;
-        }
-        Company company = opCompany.get();
+    public void handlePlanChanged(PlanChangedEvent event) throws EventProcessingException {
+
+        Company company = helper.requireCompany(event.getCompanyId());
+        Subscriber sub = helper.requireSubscriber(event.getSubscriberId());
 
         // 1. Update MRR → new MrrSnapshot
-        Optional<Subscriber> opSub = self.findById(event.getSubscriberId());
-        if (opSub.isEmpty()) {
-            log.warn("Subscriber not found: {}", event.getSubscriberId());
-            return;
-        }
-        Subscriber sub = opSub.get();
-
-        Optional<MrrSnapshot> lastOneMrr = mrrService.findLastOne(company);
-        BigDecimal lastAmount = lastOneMrr.isEmpty()
-                ? BigDecimal.ZERO
-                : lastOneMrr.get().getAmount();
+        BigDecimal lastAmount = helper.lastMrrAmount(company);
 
         BigDecimal diffPricePlan = event.getNewMrrAmount().subtract(event.getOldMrrAmount());
         MrrSnapshot mrr = MrrSnapshot.builder()
@@ -262,11 +219,8 @@ public class SubscriptionService {
 
         float lastRate = lastOneChurn.map(ChurnSnapshot::getRate).orElse(0F);
 
-        Optional<LtvSnapshot> lastOneLtv = ltvService.findLastOne(company);
-        BigDecimal lastAmountReal = BigDecimal.ZERO;
-        if (lastOneLtv.isPresent()){
-            lastAmountReal    = lastOneLtv.get().getAmountReal();
-        }
+        BigDecimal lastAmountReal = helper.lastLtvAmountReal(company);
+
         Double theoricLtv = lastRate == 0F
                 ? event.getNewMrrAmount().doubleValue()
                 : event.getNewMrrAmount().doubleValue() / lastRate;

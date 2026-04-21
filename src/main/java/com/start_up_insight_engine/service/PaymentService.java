@@ -3,6 +3,7 @@ package com.start_up_insight_engine.service;
 import com.start_up_insight_engine.database.entity.*;
 import com.start_up_insight_engine.database.enums.PaymentType;
 import com.start_up_insight_engine.database.enums.Trigger;
+import com.start_up_insight_engine.exceptions.EventProcessingException;
 import com.start_up_insight_engine.repository.*;
 import com.start_up_insight_engine.transport_kafka.OneTimePaymentEvent;
 import com.start_up_insight_engine.transport_kafka.PaymentFailedEvent;
@@ -23,30 +24,16 @@ public class PaymentService {
     private RunwayService runwayService;
 
     @Autowired
-    private SubscriptionService subscriptionService;
-
-    @Autowired
     private PaymentRecordService paymentRecordService;
 
     @Autowired
-    private CompanyService companyService;
+    private Helper helper;
 
 
 
-    public void handlePaymentSucceeded(PaymentSucceededEvent event){
-        Optional<Subscriber> opSub = subscriptionService.findById(event.getSubscriberId());
-        if (opSub.isEmpty()) {
-            log.warn("Subscriber not found: {}", event.getSubscriberId());
-            return;
-        }
-        Subscriber sub = opSub.get();
-
-        Optional<Company> opCompany = companyService.findById(event.getCompanyId());
-        if (opCompany.isEmpty()) {
-            log.warn("Company not found: {}", event.getCompanyId());
-            return;
-        }
-        Company company = opCompany.get();
+    public void handlePaymentSucceeded(PaymentSucceededEvent event) throws EventProcessingException{
+        Subscriber sub = helper.requireSubscriber(event.getSubscriberId());
+        Company company = helper.requireCompany(event.getCompanyId());
 
         // 1. add a payment record
         PaymentRecord payment = PaymentRecord.builder()
@@ -88,20 +75,10 @@ public class PaymentService {
                 event.getSubscriberId(), event.getAttemptNumber());
     }
 
-    public void handleOneTimePayment(OneTimePaymentEvent event){
-        Optional<Subscriber> opSub = subscriptionService.findById(event.getSubscriberId());
-        if (opSub.isEmpty()) {
-            log.warn("Subscriber not found: {}", event.getSubscriberId());
-            return;
-        }
-        Subscriber sub = opSub.get();
+    public void handleOneTimePayment(OneTimePaymentEvent event) throws EventProcessingException  {
 
-        Optional<Company> opCompany = companyService.findById(event.getCompanyId());
-        if (opCompany.isEmpty()) {
-            log.warn("Company not found: {}", event.getCompanyId());
-            return;
-        }
-        Company company = opCompany.get();
+        Subscriber sub = helper.requireSubscriber(event.getSubscriberId());
+        Company company = helper.requireCompany(event.getCompanyId());
 
         // 1. add a payment record
         PaymentRecord payment = PaymentRecord.builder()

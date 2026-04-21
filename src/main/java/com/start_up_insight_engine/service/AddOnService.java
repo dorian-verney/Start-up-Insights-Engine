@@ -3,6 +3,7 @@ package com.start_up_insight_engine.service;
 import com.start_up_insight_engine.database.entity.*;
 import com.start_up_insight_engine.database.enums.AddOnType;
 import com.start_up_insight_engine.database.enums.Trigger;
+import com.start_up_insight_engine.exceptions.EventProcessingException;
 import com.start_up_insight_engine.repository.*;
 import com.start_up_insight_engine.transport_kafka.AddOnAddedEvent;
 import com.start_up_insight_engine.transport_kafka.AddOnRemovedEvent;
@@ -29,9 +30,6 @@ public class AddOnService {
     private AddOnService self;
 
     @Autowired
-    private SubscriptionService subscriptionService;
-
-    @Autowired
     private SubscriberAddOnService subscriberAddOnService;
 
     @Autowired
@@ -41,10 +39,7 @@ public class AddOnService {
     private LtvService ltvService;
 
     @Autowired
-    private ChurnService churnService;
-
-    @Autowired
-    private CompanyService companyService;
+    private Helper helper;
 
     @Cacheable(value = "addon-type", key = "#addOnType.toString()")
     public Optional<AddOn> findByAddOnType(AddOnType addOnType){
@@ -52,25 +47,12 @@ public class AddOnService {
     }
 
 
-    public void handleAddonAdded(AddOnAddedEvent event) {
-        Optional<Subscriber> opSub = subscriptionService.findById(event.getSubscriberId());
-        if (opSub.isEmpty()) {
-            log.warn("Subscriber not found: {}", event.getSubscriberId());
-            return;
-        }
-        Subscriber sub = opSub.get();
-
-        Optional<Company> opCompany = companyService.findById(event.getCompanyId());
-        if (opCompany.isEmpty()) {
-            log.warn("Company not found: {}", event.getCompanyId());
-            return;
-        }
-        Company company = opCompany.get();
+    public void handleAddonAdded(AddOnAddedEvent event) throws EventProcessingException {
+        Subscriber sub = helper.requireSubscriber(event.getSubscriberId());
+        Company company = helper.requireCompany(event.getCompanyId());
 
         // 1. update MRR + mrr_amount
-        Optional<MrrSnapshot> lastOneMrr = mrrService.findLastOne(company);
-        BigDecimal lastAmount = BigDecimal.ZERO;
-        if (lastOneMrr.isPresent())  lastAmount = lastOneMrr.get().getAmount();
+        BigDecimal lastAmount = helper.lastMrrAmount(company);
         MrrSnapshot mrr = MrrSnapshot.builder()
                 .timestamp(event.getEventTime())
                 .amount(lastAmount.add(event.getMrrAmount()))
@@ -81,24 +63,8 @@ public class AddOnService {
         mrrService.save(mrr);
 
         // 2. update LTV theoric = mrr_amount / churn_rate global
-        Optional<ChurnSnapshot> lastOneChurn = churnService.findLastOne(company);
-        float lastRate = lastOneChurn.map(ChurnSnapshot::getRate).orElse(0F);
-
-        BigDecimal addonSum = subscriberAddOnService.sumActiveAddonsBySubscriber(sub);
-        Double sumAddonPlanSub = addonSum == null ? 0.0 : addonSum.doubleValue();
-
-        sumAddonPlanSub += sub.getPlan().getPrice();
-
-        Double theoricLtv = lastRate == 0F
-                ? sumAddonPlanSub
-                : sumAddonPlanSub / lastRate;
-
-        Optional<LtvSnapshot> lastOneLtv = ltvService.findLastOne(company);
-        BigDecimal lastAmountReal = BigDecimal.ZERO;
-        if (lastOneLtv.isPresent()){
-            lastAmountReal  = lastOneLtv.get().getAmountReal();
-        }
-
+        Double theoricLtv = helper.computeTheoricLtv(sub, company, sub.getPlan().getPrice());
+        BigDecimal lastAmountReal = helper.lastLtvAmountReal(company);
         LtvSnapshot ltv = LtvSnapshot.builder()
                 .timestamp(event.getEventTime())
                 .amountTheoric(theoricLtv)
@@ -127,25 +93,12 @@ public class AddOnService {
         subscriberAddOnService.save(subAddOn);
     }
 
-    public void handleAddonRemoved(AddOnRemovedEvent event) {
-        Optional<Subscriber> opSub = subscriptionService.findById(event.getSubscriberId());
-        if (opSub.isEmpty()) {
-            log.warn("Subscriber not found: {}", event.getSubscriberId());
-            return;
-        }
-        Subscriber sub = opSub.get();
-
-        Optional<Company> opCompany = companyService.findById(event.getCompanyId());
-        if (opCompany.isEmpty()) {
-            log.warn("Company not found: {}", event.getCompanyId());
-            return;
-        }
-        Company company = opCompany.get();
+    public void handleAddonRemoved(AddOnRemovedEvent event) throws EventProcessingException {
+        Subscriber sub = helper.requireSubscriber(event.getSubscriberId());
+        Company company = helper.requireCompany(event.getCompanyId());
 
         // 1. update MRR + mrr_amount
-        Optional<MrrSnapshot> lastOneMrr = mrrService.findLastOne(company);
-        BigDecimal lastAmount = BigDecimal.ZERO;
-        if (lastOneMrr.isPresent())  lastAmount = lastOneMrr.get().getAmount();
+        BigDecimal lastAmount = helper.lastMrrAmount(company);
         MrrSnapshot mrr = MrrSnapshot.builder()
                 .timestamp(event.getEventTime())
                 .amount(lastAmount.subtract(event.getMrrAmount()))
@@ -156,27 +109,9 @@ public class AddOnService {
         mrrService.save(mrr);
 
         // 2. update LTV theoric = mrr_amount / churn_rate global
-        Optional<ChurnSnapshot> lastOneChurn = churnService.findLastOne(company);
-        float lastRate = lastOneChurn.map(ChurnSnapshot::getRate).orElse(0F);
-
-        BigDecimal addonSum = subscriberAddOnService.sumActiveAddonsBySubscriber(sub);
-        Double sumAddonPlanSub = addonSum == null ? 0.0 : addonSum.doubleValue();
-
-        sumAddonPlanSub += sub.getPlan().getPrice();
-
-        // removed the AddOn to be removed to compute Ltv
-        sumAddonPlanSub -= event.getMrrAmount().doubleValue();
-
-        Double theoricLtv = lastRate == 0F
-                ? sumAddonPlanSub
-                : sumAddonPlanSub / lastRate;
-
-        Optional<LtvSnapshot> lastOneLtv = ltvService.findLastOne(company);
-        BigDecimal lastAmountReal = BigDecimal.ZERO;
-        if (lastOneLtv.isPresent()){
-            lastAmountReal  = lastOneLtv.get().getAmountReal();
-        }
-
+        Double theoricLtv = helper.computeTheoricLtv(
+                sub, company, -1 * event.getMrrAmount().doubleValue());
+        BigDecimal lastAmountReal = helper.lastLtvAmountReal(company);
         LtvSnapshot ltv = LtvSnapshot.builder()
                 .timestamp(event.getEventTime())
                 .amountTheoric(theoricLtv)
@@ -188,7 +123,6 @@ public class AddOnService {
 
 
         // 3. set remove in SubscriberAddOn
-
         Optional<SubscriberAddOn> subAddOn = subscriberAddOnService
                 .findActiveBySubscriberAndAddOnType(sub, event.getAddOnType());
 
