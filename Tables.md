@@ -53,7 +53,7 @@ erDiagram
     
 ```
 
-## Schéma 3 — Snapshots analytiques
+## Schéma 2 — Snapshots analytiques
 
 > Tables autonomes de métriques, sans FK vers les entités métier.  
 > Chaque snapshot est déclenché par un `Trigger` (événement système).
@@ -97,6 +97,23 @@ erDiagram
         Company       company
     }
 ```
+
+## Schéma 3 — Gestion Erreurs
+
+```mermaid
+erDiagram
+    DLT_RECORDS {
+        Long          id
+        UUID          eventId
+        Long          companyId            
+        String        originalTopic
+        String        exceptionMessage
+        String        payload
+        LocalDateTime failedAt
+        DltStatus status
+    }
+```
+
 
 ## Énumérations
 

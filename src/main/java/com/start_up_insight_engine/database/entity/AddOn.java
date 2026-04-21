@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 import java.io.Serializable;
 
 @Entity
-@Table(name = "Add_ON")
+@Table(name = "ADD_ON")
 @NoArgsConstructor
 @AllArgsConstructor
 public class AddOn implements Serializable {

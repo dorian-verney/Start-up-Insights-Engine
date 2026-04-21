@@ -36,10 +36,10 @@ public class PaymentConsumer {
     )
     @KafkaListener(topics = "payment-events")
     public void consume(String message,
-                        @Header(value = KafkaHeaders.DELIVERY_ATTEMPT, required = false) Integer attempt
+                        @Header(KafkaHeaders.RECEIVED_TOPIC) String receivedTopic
     ) throws EventProcessingException, JsonProcessingException {
-        if (attempt != null && attempt > 1) {
-            log.warn("Retry attempt {}/4 for payment event: {}", attempt, message);
+        if (receivedTopic.contains("-retry")) {
+            log.warn("Retry for payment event on topic {}: {}", receivedTopic, message);
         }
         JsonNode node = objectMapper.readTree(message);
         String eventType = node.get("eventType").asText();

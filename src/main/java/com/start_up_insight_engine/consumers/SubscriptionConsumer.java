@@ -36,10 +36,11 @@ public class SubscriptionConsumer {
     )
     @KafkaListener(topics = "subscription-events")
     public void consume(String message,
-                        @Header(value = KafkaHeaders.DELIVERY_ATTEMPT, required = false) Integer attempt
+                        @Header(KafkaHeaders.RECEIVED_TOPIC) String receivedTopic
     ) throws EventProcessingException, JsonProcessingException {
-        if (attempt != null && attempt > 1) {
-            log.warn("Retry attempt {}/4 for subscription event: {}", attempt, message);
+        // Spring automatically creates a listen with -retry that this function can consume
+        if (receivedTopic.contains("-retry")) {
+            log.warn("Retry for subscription event on topic {}: {}", receivedTopic, message);
         }
         JsonNode node = objectMapper.readTree(message);
         String eventType = node.get("eventType").asText();
