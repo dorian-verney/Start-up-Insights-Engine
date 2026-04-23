@@ -1,0 +1,31 @@
+package com.insight.database.entity;
+
+import com.insight.database.enums.AddOnBillingType;
+import com.insight.database.enums.AddOnType;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
+
+@Entity
+@Table(name = "ADD_ON")
+@NoArgsConstructor
+@AllArgsConstructor
+public class AddOn implements Serializable {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)  // JPA stocke valeur de l'enum (LEARNING, ..) au lieu de l'index
+    private AddOnType addOnType;
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private AddOnBillingType addOnBillingType;
+
+    @Column(nullable = false)
+    private Integer price;
+}
