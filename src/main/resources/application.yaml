@@ -6,12 +6,18 @@ logging:
     org.hibernate.orm.jdbc.bind: trace
 
 spring:
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+
   sql:
     init:
       mode: always
 
   kafka:
     bootstrap-servers: localhost:9092  # adresse du broker Kafka
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
     consumer:
       group-id: startup-insight-engine # identifiant du groupe de consumers
       auto-offset-reset: earliest       # relit depuis le début si pas d'offset

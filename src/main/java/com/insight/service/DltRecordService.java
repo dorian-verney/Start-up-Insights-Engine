@@ -28,6 +28,11 @@ public class DltRecordService {
         try {
             JsonNode node = objectMapper.readTree(payload);
 
+            // Handle legacy double-encoded payloads (root is a JSON string, not an object)
+            if (node.isTextual()) {
+                node = objectMapper.readTree(node.asText());
+            }
+
             UUID eventId = extractUuid(node, "eventId");
             Long companyId = extractLong(node, "companyId");
 

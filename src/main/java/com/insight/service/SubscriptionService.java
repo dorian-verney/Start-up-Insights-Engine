@@ -78,8 +78,8 @@ public class SubscriptionService {
         Company company = helper.requireCompany(event.getCompanyId());
 
         // 1. New subscriber to persist in database
-        Plan plan = planService.findByPlanType(event.getPlantype())
-                .orElseThrow(() -> new IllegalArgumentException("Unknown plan type: " + event.getPlantype()));
+        Plan plan = planService.findByPlanType(event.getPlanType())
+                .orElseThrow(() -> new IllegalArgumentException("Unknown plan type: " + event.getPlanType()));
 
         Subscriber sub = Subscriber.builder()
                 .name(event.getSubscriberName())
@@ -91,12 +91,16 @@ public class SubscriptionService {
         self.save(sub);
 
         // 2. Update MRR → new MrrSnapshot
+        BigDecimal mrrAmount = event.getMrrAmount() != null
+                ? event.getMrrAmount()
+                : new BigDecimal(plan.getPrice());
+
         BigDecimal lastAmount = helper.lastMrrAmount(company);
 
         MrrSnapshot mrr = MrrSnapshot.builder()
                 .timestamp(event.getEventTime())
-                .amount(lastAmount.add(event.getMrrAmount()))
-                .delta(event.getMrrAmount())
+                .amount(lastAmount.add(mrrAmount))
+                .delta(mrrAmount)
                 .reason(Trigger.SUB_STARTED)
                 .company(company)
                 .build();
@@ -119,8 +123,8 @@ public class SubscriptionService {
         BigDecimal lastAmountReal = helper.lastLtvAmountReal(company);
 
         Double theoricLtv = lastRate == 0F
-                ? event.getMrrAmount().doubleValue()
-                : event.getMrrAmount().doubleValue() / lastRate;
+                ? mrrAmount.doubleValue()
+                : mrrAmount.doubleValue() / lastRate;
 
         LtvSnapshot ltv = LtvSnapshot.builder()
                 .timestamp(event.getEventTime())
